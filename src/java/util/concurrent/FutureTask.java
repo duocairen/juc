@@ -68,7 +68,7 @@ public class FutureTask<V> implements RunnableFuture<V> {
      * cancellation races. Sync control in the current design relies
      * on a "state" field updated via CAS to track completion, along
      * with a simple Treiber stack to hold waiting threads.
-     *
+     *新版本不再使用AQS，而是直接使用一个state字段跟Waiter
      * Style note: As usual, we bypass overhead of using
      * AtomicXFieldUpdaters and instead directly use Unsafe intrinsics.
      */
@@ -79,7 +79,7 @@ public class FutureTask<V> implements RunnableFuture<V> {
      * setException, and cancel.  During completion, state may take on
      * transient values of COMPLETING (while outcome is being set) or
      * INTERRUPTING (only while interrupting the runner to satisfy a
-     * cancel(true)). Transitions from these intermediate to final
+     * cancel(true)). Transitions 转移 from these intermediate to final
      * states use cheaper ordered/lazy writes because values are unique
      * and cannot be further modified.
      *

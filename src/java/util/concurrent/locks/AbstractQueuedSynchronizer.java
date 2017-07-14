@@ -108,7 +108,7 @@ import sun.misc.Unsafe;
  * following methods, as applicable, by inspecting and/or modifying
  * the synchronization state using {@link #getState}, {@link
  * #setState} and/or {@link #compareAndSetState}:
- *
+ *自己根据需要(共享模式或独占模式)实现如下方法，其他所有的排队、阻塞机制由AQS完成
  * <ul>
  * <li> {@link #tryAcquire}
  * <li> {@link #tryRelease}
@@ -146,8 +146,11 @@ import sun.misc.Unsafe;
  *        <em>unblock the first queued thread</em>;
  * </pre>
  *
- * (Shared mode is similar but may involve cascading signals.)
- *
+ * (Shared mode is similar but may involve cascading 级联 signals.)
+ *虽然AQS使用了一个内部FIFO队列，但是默认并不强制所有线程获得一定是先进先出，
+ * 因为acquire实现首先是调用tryAcquire直接尝试获得，失败后再进队列，
+ * 如果确实需要公平锁实现则可以在tryAcquire实现中自己先调用hasQueuedPredecessors
+ * 判断队列中是否有线程在排队，有排队则返回false
  * <p id="barging">Because checks in acquire are invoked before
  * enqueuing, a newly acquiring thread may <em>barge</em> ahead of
  * others that are blocked and queued.  However, you can, if desired,
@@ -164,7 +167,7 @@ import sun.misc.Unsafe;
  * <em>renouncement</em>, and <em>convoy-avoidance</em>) strategy.
  * While this is not guaranteed to be fair or starvation-free, earlier
  * queued threads are allowed to recontend before later queued
- * threads, and each recontention has an unbiased chance to succeed
+ * threads, and each recontention has an unbiased 公正 chance to succeed
  * against incoming threads.  Also, while acquires do not
  * &quot;spin&quot; in the usual sense, they may perform multiple
  * invocations of {@code tryAcquire} interspersed with other
@@ -301,11 +304,11 @@ public abstract class AbstractQueuedSynchronizer
     /**
      * Wait queue node class.
      *
-     * <p>The wait queue is a variant of a "CLH" (Craig, Landin, and
+     * <p>The wait queue is a variant 变体 of a "CLH" (Craig, Landin, and
      * Hagersten) lock queue. CLH locks are normally used for
      * spinlocks.  We instead use them for blocking synchronizers, but
-     * use the same basic tactic of holding some of the control
-     * information about a thread in the predecessor of its node.  A
+     * use the same basic tactic 策略 of holding some of the control
+     * information about a thread in the predecessor 前任 of its node.  A
      * "status" field in each node keeps track of whether a thread
      * should block.  A node is signalled when its predecessor
      * releases.  Each node of the queue otherwise serves as a
@@ -316,7 +319,7 @@ public abstract class AbstractQueuedSynchronizer
      * it only gives the right to contend.  So the currently released
      * contender thread may need to rewait.
      *
-     * <p>To enqueue into a CLH lock, you atomically splice it in as new
+     * <p>To enqueue into a CLH lock, you atomically splice 拼接 it in as new
      * tail. To dequeue, you just set the head field.
      * <pre>
      *      +------+  prev +-----+       +-----+
@@ -324,9 +327,9 @@ public abstract class AbstractQueuedSynchronizer
      *      +------+       +-----+       +-----+
      * </pre>
      *
-     * <p>Insertion into a CLH queue requires only a single atomic
+     * <p>Insertion 插入 into a CLH queue requires only a single atomic
      * operation on "tail", so there is a simple atomic point of
-     * demarcation from unqueued to queued. Similarly, dequeuing
+     * demarcation 划分 from unqueued to queued. Similarly, dequeuing
      * involves only updating the "head". However, it takes a bit
      * more work for nodes to determine who their successors are,
      * in part to deal with possible cancellation due to timeouts
@@ -341,7 +344,7 @@ public abstract class AbstractQueuedSynchronizer
      *
      * <p>We also use "next" links to implement blocking mechanics.
      * The thread id for each node is kept in its own node, so a
-     * predecessor signals the next node to wake up by traversing
+     * predecessor signals the next node to wake up by traversing 穿过
      * next link to determine which thread it is.  Determination of
      * successor must avoid races with newly queued nodes to set
      * the "next" fields of their predecessors.  This is solved
@@ -350,7 +353,7 @@ public abstract class AbstractQueuedSynchronizer
      * (Or, said differently, the next-links are an optimization
      * so that we don't usually need a backward scan.)
      *
-     * <p>Cancellation introduces some conservatism to the basic
+     * <p>Cancellation introduces some conservatism 保守 to the basic
      * algorithms.  Since we must poll for cancellation of other
      * nodes, we can miss noticing whether a cancelled node is
      * ahead or behind us. This is dealt with by always unparking
@@ -363,11 +366,14 @@ public abstract class AbstractQueuedSynchronizer
      * effort if there is never contention. Instead, the node
      * is constructed and head and tail pointers are set upon first
      * contention.
-     *
+     *线程在条件中等待使用同个node，但是使用不同的link
      * <p>Threads waiting on Conditions use the same nodes, but
      * use an additional link. Conditions only need to link nodes
      * in simple (non-concurrent) linked queues because they are
-     * only accessed when exclusively held.  Upon await, a node is
+     * only accessed when exclusively held.
+     * 在wait时，一个node被插入条件队列，在signal时，node被转移到主队列，
+     * 一个特殊的status值用来指示node在哪个队列
+     * Upon await, a node is
      * inserted into a condition queue.  Upon signal, the node is
      * transferred to the main queue.  A special value of status
      * field is used to mark which queue a node is on.
@@ -405,7 +411,7 @@ public abstract class AbstractQueuedSynchronizer
          *               then retry the atomic acquire, and then,
          *               on failure, block.
          *   CANCELLED:  This node is cancelled due to timeout or interrupt.
-         *               Nodes never leave this state. In particular,
+         *               Nodes never leave 离开 this state. In particular,
          *               a thread with cancelled node never again blocks.
          *   CONDITION:  This node is currently on a condition queue.
          *               It will not be used as a sync queue node
