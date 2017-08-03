@@ -1,9 +1,9 @@
 package test;
 
 import java.util.BitSet;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.locks.LockSupport;
+import java.util.concurrency.ExecutorService;
+import java.util.concurrency.Executors;
+import java.util.concurrency.locks.LockSupport;
 
 /**
  * Test
