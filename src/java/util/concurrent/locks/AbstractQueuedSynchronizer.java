@@ -76,7 +76,8 @@ import sun.misc.Unsafe;
  * one of these modes, but both can come into play for example in a
  * {@link ReadWriteLock}. Subclasses that support only exclusive or
  * only shared modes need not define the methods supporting the unused mode.
- *
+ * 一般子类只支持独占模式或共享模式，但也可以同时支持独占和共享，像ReadWriteLock
+ * 就是这样
  * <p>This class defines a nested {@link ConditionObject} class that
  * can be used as a {@link Condition} implementation by subclasses
  * supporting exclusive mode for which method {@link
